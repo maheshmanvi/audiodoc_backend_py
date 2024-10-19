@@ -2,10 +2,10 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 import whisper
 import os
 import shutil
+import re
 
 app = FastAPI()
 
-# Transcription function
 def transcribe_audio(audio_file_path: str, language: str = None):
     model = whisper.load_model("small")
     result = model.transcribe(audio_file_path, language=language)
@@ -18,41 +18,34 @@ async def transcribe(
     timestamp: bool = Form(False, description="If true, returns SRT format with timestamps")
 ):
     try:
-        # Save the uploaded file temporarily
         audio_file_path = f"temp_{file.filename}"
         with open(audio_file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        # Call the transcription function
         transcription = transcribe_audio(audio_file_path, language=language)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
     finally:
-        # Remove the temporary audio file after transcribing
         if os.path.exists(audio_file_path):
             os.remove(audio_file_path)
 
-    # Prepare the plain text transcript
-    plain_text = "".join([segment['text'] for segment in transcription])
+    plain_text = " ".join([segment['text'].strip() for segment in transcription])
+    plain_text = re.sub(r'\s+', ' ', plain_text)
 
-    # Prepare the SRT content (if requested)
     srt_content = ""
     if timestamp:
-        srt_content = ""
         for i, segment in enumerate(transcription, 1):
             start = convert_seconds_to_srt_time(segment['start'])
             end = convert_seconds_to_srt_time(segment['end'])
-            text = segment['text']
+            text = segment['text'].strip()
             srt_content += f"{i}\n{start} --> {end}\n{text}\n\n"
 
-    # Return both formats in the response
     return {
         "transcript": plain_text,
         "srt_format": srt_content if timestamp else None
     }
 
-# Helper function to convert seconds to SRT time format (HH:MM:SS,MS)
 def convert_seconds_to_srt_time(seconds: float) -> str:
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
