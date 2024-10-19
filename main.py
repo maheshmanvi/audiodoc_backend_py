@@ -33,20 +33,24 @@ async def transcribe(
         if os.path.exists(audio_file_path):
             os.remove(audio_file_path)
 
-    # Decide output format based on the timestamp flag
+    # Prepare the plain text transcript
+    plain_text = "".join([segment['text'] for segment in transcription])
+
+    # Prepare the SRT content (if requested)
+    srt_content = ""
     if timestamp:
-        # Convert the transcription segments into .srt format (HH:MM:SS,MS)
         srt_content = ""
         for i, segment in enumerate(transcription, 1):
             start = convert_seconds_to_srt_time(segment['start'])
             end = convert_seconds_to_srt_time(segment['end'])
             text = segment['text']
             srt_content += f"{i}\n{start} --> {end}\n{text}\n\n"
-        return srt_content
-    else:
-        # Return plain text transcription
-        plain_text = " ".join([segment['text'] for segment in transcription])
-        return plain_text
+
+    # Return both formats in the response
+    return {
+        "transcript": plain_text,
+        "srt_format": srt_content if timestamp else None
+    }
 
 # Helper function to convert seconds to SRT time format (HH:MM:SS,MS)
 def convert_seconds_to_srt_time(seconds: float) -> str:
