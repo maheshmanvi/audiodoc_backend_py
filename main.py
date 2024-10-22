@@ -15,7 +15,7 @@ def transcribe_audio(audio_file_path: str, language: str = None):
 async def transcribe(
     file: UploadFile = File(...),
     language: str = Form("en", description="Language for transcription, default is English"),
-    timestamp: bool = Form(False, description="If true, returns SRT format with timestamps")
+    timestamp: bool = Form(True, description="If true, returns SRT format with timestamps")
 ):
     try:
         audio_file_path = f"temp_{file.filename}"
@@ -49,5 +49,5 @@ async def transcribe(
 def convert_seconds_to_srt_time(seconds: float) -> str:
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
-    milliseconds = (seconds - int(seconds)) * 1000
-    return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02},{int(milliseconds):03}"
+    milliseconds = int((seconds - int(seconds)) * 1000)
+    return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02},{milliseconds:03}"
