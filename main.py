@@ -5,6 +5,7 @@ import os
 import shutil
 import gc
 from dotenv import load_dotenv
+from langdetect import detect
 
 # Load environment variables from .env file
 load_dotenv()
@@ -13,17 +14,35 @@ HUGGING_FACE_TOKEN = os.getenv('HUGGING_FACE_TOKEN')
 app = FastAPI()
 
 # Function to process audio with diarization
-def process_audio_with_diarization(audio_file_path, hf_token, language="en", min_speakers=2, max_speakers=5, batch_size=16):
+def process_audio_with_diarization(audio_file_path, hf_token, min_speakers=0, max_speakers=5, batch_size=16):
     # Check if CUDA is available and use GPU if possible, otherwise fallback to CPU
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    compute_type = "float16" if torch.cuda.is_available() else "int8"  # Optimizing based on device
+    if torch.cuda.is_available():
+        device = "cuda"
+        compute_type = "float16"
+        print("CUDA is available, using GPU.")
+    else:
+        device = "cpu"
+        compute_type = "int8"
+        print("CUDA is not available, using CPU.")
 
     # 1. Load WhisperX model for transcription
-    model = whisperx.load_model("large-v2", device, compute_type=compute_type)
+    model = whisperx.load_model("large-v2", device, task="transcribe", compute_type=compute_type, language="en")
 
     # 2. Load audio and transcribe with word-level timestamps
     audio = whisperx.load_audio(audio_file_path)
-    result = model.transcribe(audio, batch_size=batch_size)
+    result = model.transcribe(audio, batch_size=batch_size, language="en")
+
+    # Print the raw transcript text
+    # print("Raw Transcript from Model:")
+    # print(" ".join([segment['text'] for segment in result["segments"]]))  # printing the transcript
+
+    # Check if there are any transcribed segments
+    if not result["segments"]:
+        print("No active speech found in audio.")
+        return {
+            "transcript": "No active speech found",
+            "srt_format": "No active speech found"
+        }
 
     # Optional: Free up memory
     del model
@@ -44,6 +63,14 @@ def process_audio_with_diarization(audio_file_path, hf_token, language="en", min
     # 5. Assign speaker labels to the transcription
     result = whisperx.assign_word_speakers(diarize_segments, result)
 
+    # Detect language of each segment and update accordingly (English or Kannada)
+    for segment in result["segments"]:
+        detected_language = detect(segment['text'])  # Detect language of the text
+        if detected_language == "kn":  # If Kannada detected
+            segment['text'] = segment['text']  # Keep as Kannada (no change)
+        elif detected_language == "en":  # If English detected
+            segment['text'] = segment['text']  # Keep as English (no change)
+
     # Generate SRT with speaker labels
     srt_content = generate_srt(result["segments"], diarize_segments)
 
@@ -52,15 +79,40 @@ def process_audio_with_diarization(audio_file_path, hf_token, language="en", min
         "srt_format": srt_content
     }
 
-# Helper function to generate SRT content
-def generate_srt(segments, diarize_segments):
+
+
+def generate_srt(segments, diarize_segments, overlap_threshold=0.2, small_gap=0.1):
     srt = []
+    speaker_mapping = {}  # Map to track unique speaker labels and assign numbers
+    speaker_counter = 1
+    prev_end_time = 0.0  # Keeps track of the previous end time to prevent overlap
+
     for idx, segment in enumerate(segments):
         start_time = segment['start']
         end_time = segment['end']
-        speaker = diarize_segments.get(segment['speaker'], f"Speaker {segment['speaker']}")
+        speaker_id = segment['speaker']
+
+        # Check if the speaker has been assigned a number, if not, assign a new one
+        if speaker_id not in speaker_mapping:
+            speaker_mapping[speaker_id] = f"Speaker {speaker_counter}"
+            speaker_counter += 1
+
+        speaker = speaker_mapping[speaker_id]
         text = segment['text']
 
+        # Check for overlap with the previous segment
+        if start_time < prev_end_time:
+            # If overlap is too short, allow overlap and adjust timings
+            if prev_end_time - start_time < overlap_threshold:
+                start_time = prev_end_time  # Start where the previous segment ends
+            else:
+                # Otherwise, add a small gap between segments
+                start_time = prev_end_time + small_gap
+
+        # Ensure timestamps don't overlap beyond threshold
+        prev_end_time = end_time
+
+        # Format start and end times for SRT
         start_str = format_timestamp(start_time)
         end_str = format_timestamp(end_time)
 
@@ -69,7 +121,11 @@ def generate_srt(segments, diarize_segments):
         srt.append(f"{speaker}: {text}")
         srt.append("")
 
+    # print("Transcript after creating srt content:")
+    # print("\n".join(srt))  # printing the transcript
+
     return "\n".join(srt)
+
 
 # Helper function to format timestamps for SRT
 def format_timestamp(seconds):
@@ -82,7 +138,7 @@ def format_timestamp(seconds):
 async def transcribe(
     file: UploadFile = File(...),
     language: str = Form("en", description="Language for transcription, default is English"),
-    min_speakers: int = Form(2, description="Minimum number of speakers for diarization"),
+    min_speakers: int = Form(0, description="Minimum number of speakers for diarization"),
     max_speakers: int = Form(5, description="Maximum number of speakers for diarization")
 ):
     try:
@@ -97,7 +153,7 @@ async def transcribe(
         result = process_audio_with_diarization(
             audio_file_path,
             hf_token,
-            language=language,
+            # language=language,
             min_speakers=min_speakers,
             max_speakers=max_speakers
         )
