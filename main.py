@@ -5,7 +5,7 @@ import os
 import shutil
 import gc
 from dotenv import load_dotenv
-from langdetect import detect
+from lightning.fabric.accelerators.cuda import is_cuda_available
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,27 +14,25 @@ HUGGING_FACE_TOKEN = os.getenv('HUGGING_FACE_TOKEN')
 app = FastAPI()
 
 # Function to process audio with diarization
-def process_audio_with_diarization(audio_file_path, hf_token, min_speakers=0, max_speakers=5, batch_size=16):
+def process_audio_with_diarization(audio_file_path, hf_token, language="en", min_speakers=2, max_speakers=5, batch_size=6):
+
     # Check if CUDA is available and use GPU if possible, otherwise fallback to CPU
-    if torch.cuda.is_available():
-        device = "cuda"
-        compute_type = "float16"
-        print("CUDA is available, using GPU.")
+    is_cuda_available = torch.cuda.is_available()
+    if is_cuda_available:
+        print(f"Cuda is available, using GPU.\nDevice ID: {torch.cuda.current_device()}, GPU: {torch.cuda.get_device_name(0)}")
     else:
-        device = "cpu"
-        compute_type = "int8"
         print("CUDA is not available, using CPU.")
 
+    device = "cuda" if is_cuda_available else "cpu"
+    compute_type = "int8"
+    # compute_type = "float16" if is_cuda_available else "int8"
+
     # 1. Load WhisperX model for transcription
-    model = whisperx.load_model("large-v2", device, task="transcribe", compute_type=compute_type, language="en")
+    model = whisperx.load_model("large", device, task="transcribe", compute_type=compute_type, language=language)
 
     # 2. Load audio and transcribe with word-level timestamps
     audio = whisperx.load_audio(audio_file_path)
-    result = model.transcribe(audio, batch_size=batch_size, language="en")
-
-    # Print the raw transcript text
-    # print("Raw Transcript from Model:")
-    # print(" ".join([segment['text'] for segment in result["segments"]]))  # printing the transcript
+    result = model.transcribe(audio, batch_size=batch_size, language=language)
 
     # Check if there are any transcribed segments
     if not result["segments"]:
@@ -63,14 +61,6 @@ def process_audio_with_diarization(audio_file_path, hf_token, min_speakers=0, ma
     # 5. Assign speaker labels to the transcription
     result = whisperx.assign_word_speakers(diarize_segments, result)
 
-    # Detect language of each segment and update accordingly (English or Kannada)
-    for segment in result["segments"]:
-        detected_language = detect(segment['text'])  # Detect language of the text
-        if detected_language == "kn":  # If Kannada detected
-            segment['text'] = segment['text']  # Keep as Kannada (no change)
-        elif detected_language == "en":  # If English detected
-            segment['text'] = segment['text']  # Keep as English (no change)
-
     # Generate SRT with speaker labels
     srt_content = generate_srt(result["segments"], diarize_segments)
 
@@ -78,7 +68,6 @@ def process_audio_with_diarization(audio_file_path, hf_token, min_speakers=0, ma
         "transcript": " ".join([segment['text'] for segment in result["segments"]]),
         "srt_format": srt_content
     }
-
 
 
 def generate_srt(segments, diarize_segments, overlap_threshold=0.2, small_gap=0.1):
@@ -133,12 +122,13 @@ def format_timestamp(seconds):
     time_str = f"{int(seconds // 3600):02}:{int((seconds % 3600) // 60):02}:{int(seconds % 60):02},{millis:03}"
     return time_str
 
+
 # FastAPI endpoint to handle file upload and transcription with diarization
 @app.post("/transcribe/")
 async def transcribe(
     file: UploadFile = File(...),
     language: str = Form("en", description="Language for transcription, default is English"),
-    min_speakers: int = Form(0, description="Minimum number of speakers for diarization"),
+    min_speakers: int = Form(2, description="Minimum number of speakers for diarization"),
     max_speakers: int = Form(5, description="Maximum number of speakers for diarization")
 ):
     try:

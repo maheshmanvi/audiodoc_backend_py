@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.12 (AudioTranscriptor)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (AudioTranscriptor)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.11 (audiodoc_backend_py)" project-jdk-type="Python SDK" />
 </project>
