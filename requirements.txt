@@ -1,0 +1,10 @@
+torch~=2.5.0
+torchaudio
+torchvision
+whisperx~=3.1.5
+fastapi~=0.115.3
+uvicorn[standard]
+python-dotenv~=1.0.1
+python-multipart
+pydub~=0.25.1
+langdetect
