@@ -4,8 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="44ef4497-be9a-4fc8-a9e1-0147fe2f8ae7" name="Changes" comment="Added Speaker Diarization using WhisperX.">
-      <change beforePath="$PROJECT_DIR$/.idea/AudioTranscriptor.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/AudioTranscriptor.iml" afterDir="false" />
+    <list default="true" id="44ef4497-be9a-4fc8-a9e1-0147fe2f8ae7" name="Changes" comment="All Updates made.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
@@ -52,16 +51,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.FastAPI-Uvicorn.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;whisperx&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;inlay.hints&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.FastAPI-Uvicorn.executor": "Run",
+    "Python.main.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "whisperx",
+    "ignore.virus.scanning.warn.message": "true",
+    "settings.editor.selected.configurable": "inlay.hints"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\PyCharm\AudioTranscriptor\audio" />
@@ -70,7 +70,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-0e3be3396995-c546a90a8094-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-242.23339.19" />
+        <option value="bundled-python-sdk-fc1d50d2d915-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.24978.54" />
       </set>
     </attachedChunks>
   </component>
@@ -115,7 +115,15 @@
       <option name="project" value="LOCAL" />
       <updated>1729586424566</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="All Updates made.">
+      <option name="closed" value="true" />
+      <created>1731677625010</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1731677625010</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="UnknownFeatures">
@@ -136,6 +144,7 @@
     <MESSAGE value="Updated transcription API to return both plain text and SRT format based on user input." />
     <MESSAGE value="Cleaned up extra spaces in the transcription by stripping leading/trailing spaces and normalizing multiple spaces to a single space." />
     <MESSAGE value="Updated" />
-    <option name="LAST_COMMIT_MESSAGE" value="Updated" />
+    <MESSAGE value="All Updates made." />
+    <option name="LAST_COMMIT_MESSAGE" value="All Updates made." />
   </component>
 </project>

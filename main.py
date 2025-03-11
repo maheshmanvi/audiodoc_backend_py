@@ -14,7 +14,7 @@ HUGGING_FACE_TOKEN = os.getenv('HUGGING_FACE_TOKEN')
 app = FastAPI()
 
 # Function to process audio with diarization
-def process_audio_with_diarization(audio_file_path, hf_token, min_speakers=0, max_speakers=5, batch_size=16):
+def process_audio_with_diarization(audio_file_path, hf_token, language="en", min_speakers=0, max_speakers=5, batch_size=16):
     # Check if CUDA is available and use GPU if possible, otherwise fallback to CPU
     if torch.cuda.is_available():
         device = "cuda"
@@ -26,11 +26,11 @@ def process_audio_with_diarization(audio_file_path, hf_token, min_speakers=0, ma
         print("CUDA is not available, using CPU.")
 
     # 1. Load WhisperX model for transcription
-    model = whisperx.load_model("large-v2", device, task="transcribe", compute_type=compute_type, language="en")
+    model = whisperx.load_model("large-v2", device, task="transcribe", compute_type=compute_type, language=language)
 
     # 2. Load audio and transcribe with word-level timestamps
     audio = whisperx.load_audio(audio_file_path)
-    result = model.transcribe(audio, batch_size=batch_size, language="en")
+    result = model.transcribe(audio, batch_size=batch_size, language=language)
 
     # Print the raw transcript text
     # print("Raw Transcript from Model:")
@@ -153,7 +153,7 @@ async def transcribe(
         result = process_audio_with_diarization(
             audio_file_path,
             hf_token,
-            # language=language,
+            language=language,
             min_speakers=min_speakers,
             max_speakers=max_speakers
         )
